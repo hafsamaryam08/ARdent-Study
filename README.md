@@ -1,61 +1,83 @@
 # ARdent Study – AR Powered Contextual Learning Companion
 
-ARdent Study is a full-stack AR-based contextual learning platform designed to make education more interactive, visual, and intuitive. The system integrates **Augmented Reality**, a clean web interface, and backend logic to help students explore complex topics through 3D models, contextual explanations, and guided learning flows.
+ARdent Study is an AI- and AR-powered contextual learning platform designed to transform traditional studying by integrating Augmented Reality, Computer Vision, Natural Language Processing, and Graph-based intelligence. The system scans textbooks or handwritten notes, extracts key concepts using OCR and NLP, and instantly enhances them with multimedia resources such as 3D models, animations, explanations, videos, flashcards, quizzes, and collaborative knowledge graphs.
 
-This repository contains the complete project structure including frontend, backend, assets, APIs, and supporting modules used in the Final Year Project.
+This repository contains the complete full-stack implementation of the Final Year Project, including frontend interfaces, backend APIs, AI modules, database design, AR components, and system logic.
 
 ---
 
 ## 🎯 Project Overview
 
-Traditional learning resources often lack interactivity, making it difficult for students to visualize complex concepts. **ARdent Study bridges this gap** by enabling:
+ARdent Study bridges the gap between passive reading and interactive learning by enabling:
 
-- Real-time visualization of concepts using AR  
-- Contextual learning with step-by-step understanding  
-- A structured digital interface that guides learners  
-- Smooth navigation between topics, subjects, and 3D models  
+- Scanning of textbook pages and handwritten notes  
+- Automatic concept extraction (OCR + NLP)  
+- Contextual enhancement with multimedia elements  
+- AR overlays on physical content  
+- Personalized learning based on user style  
+- Collaborative knowledge graph for peer learning  
+- Real-time quizzes and spaced repetition  
 
-The project is built as a **web-based AR learning companion** suitable for academic learning environments.
+The platform supports both **mobile** and **web** applications, combining modern UI/UX with intelligent backend systems.
 
 ---
 
-## 🚀 Key Features
+## 🚀 Core Features
 
-### 🔹 **AR-powered Visual Learning**
-Display interactive 3D models using AR, giving students a deeper understanding of abstract or complex concepts.
+### 📘 1. Content Scanning & Concept Extraction
+- Extracts text using **OCR (Tesseract, EasyOCR)**
+- Handwriting recognition using ML/CNN models
+- Concept detection using **spaCy, Sentence-BERT**
 
-### 🔹 **Full-stack Web Application**
-Includes both frontend and backend:
-- Frontend: UI/UX, pages, layouts, AR screens  
-- Backend: Data handling, model serving, routes, logic  
+### 🤖 2. AI-Powered Concept Enhancement
+- Semantic understanding and explanation generation
+- Multimedia retrieval (YouTube, Wikimedia, NASA 3D Models)
+- Summaries & FAQs generated via GPT-4 / Claude APIs
 
-### 🔹 **Modern & Responsive UI**
-Built with a clean, simple design for students at all levels.
+### 🧊 3. AR Visualization
+- AR overlays using **AR.js**, ARCore/ARKit  
+- 3D model integration via Three.js, Unity, Blender
 
-### 🔹 **Contextual Learning Flow**
-Each concept includes:
-- A 3D AR model  
-- Description  
-- Steps / breakdown  
-- Examples  
+### 🧠 4. Collaborative Knowledge Graph
+- Concept linking using **Neo4j graph database**
+- Interactive visualization through D3.js / Cytoscape.js
 
-### 🔹 **Organized Course Navigation**
-Browse subjects → topics → AR view → explanation.
+### 🎯 5. Personalized Learning System
+- Learns user study style  
+- Spaced repetition algorithm (Anki-based)
+- Adaptive difficulty quizzes
 
-### 🔹 **Modular Structure**
-Assets, scripts, components, and API endpoints organized professionally.
+### 🎤 6. Speech-to-Text Notes
+- Converts audio notes using speech recognition
+- Integrates converted text into learning flow
+
+### 📝 7. Smart Quizzes & Assessments
+- Auto-generated quizzes from scanned content  
+- Performance-adaptive questioning  
+- Real-time feedback
 
 ---
 
 ## 🧰 Tech Stack
 
 ### **Frontend**
-- HTML5  
-- CSS3  
-- JavaScript  
-- Bootstrap 5  
-- AR.js / WebXR (if used)
+- React Native (Mobile App)
+- React.js (Web App Interface)
+- AR.js, Three.js for AR modules
+- Figma / Adobe XD for UI/Mockups
 
 ### **Backend**
-- (Add your backend: e.g., Node.js, Firebase, PHP, Laravel — whatever you used)  
-*(Tell me your backend and I will update this section perfectly.)*
+- Node.js + Express.js  
+- Python (for ML modules: OCR, NLP, GNN)  
+- APIs: GPT-4, Claude, Knowledge Graph APIs (Wikidata, ConceptNet)
+
+### **Databases**
+- Neo4j (Knowledge Graph)
+- MongoDB / PostgreSQL (User data, quizzes, content)
+- Cloud storage for multimedia
+
+### **Machine Learning**
+- **OCR:** Tesseract, EasyOCR  
+- **NLP:** spaCy, BERT, Sentence-BERT  
+- **Sketch Recognition:** CNN + GNN (TensorFlow/Keras)  
+
