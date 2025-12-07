@@ -1,8 +1,8 @@
 # ARdent Study – AR Powered Contextual Learning Companion
 
-ARdent Study is an AI- and AR-powered contextual learning platform designed to transform traditional studying by integrating Augmented Reality, Computer Vision, Natural Language Processing, and Graph-based intelligence. The system scans textbooks or handwritten notes, extracts key concepts using OCR and NLP, and instantly enhances them with multimedia resources such as 3D models, animations, explanations, videos, flashcards, quizzes, and collaborative knowledge graphs.
+ARdent Study is an AR-powered contextual learning platform designed to transform traditional studying by integrating Augmented Reality, Computer Vision, Natural Language Processing, and Graph-based intelligence. The system scans textbooks or handwritten notes, extracts key concepts using OCR and NLP, and instantly enhances them with multimedia resources such as 3D models, animations, explanations, videos, flashcards, quizzes, and collaborative knowledge graphs.
 
-This repository contains the complete full-stack implementation of the Final Year Project, including frontend interfaces, backend APIs, AI modules, database design, AR components, and system logic.
+This repository contains the complete full-stack implementation of my Final Year Project, including frontend interfaces, backend APIs, AI modules, database design, AR components, and system logic.
 
 ---
 
