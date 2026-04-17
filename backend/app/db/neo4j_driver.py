@@ -1,13 +1,11 @@
 from neo4j import GraphDatabase
 from app.core.config import settings
-
 class Neo4jDriver:
     def __init__(self):
         self.driver = GraphDatabase.driver(
             settings.neo4j_uri,
-            auth=(settings.neo4j_user, settings.neo4j_password),
-            encrypted=False
-        )
+            auth=(settings.neo4j_user, settings.neo4j_password)
+        )        
     
     def close(self):
         """Close the driver connection."""
@@ -55,3 +53,4 @@ try:
 except Exception as e:
     print(f"Warning: Could not connect to Neo4j: {e}")
     neo4j_driver = None
+    
