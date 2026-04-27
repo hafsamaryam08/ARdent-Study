@@ -1,3 +1,4 @@
+import "dotenv/config";
 import express, { type Request, Response, NextFunction } from "express";
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
@@ -34,12 +35,18 @@ app.use(session({
   },
 }));
 
-app.use(express.json({
+// Updated to allow larger images/scans (up to 50MB)
+app.use(express.json({ 
+  limit: '50mb',
   verify: (req, _res, buf) => {
     req.rawBody = buf;
   }
 }));
-app.use(express.urlencoded({ extended: false }));
+
+app.use(express.urlencoded({ 
+  limit: '50mb',
+  extended: false 
+}));
 
 app.use((req, res, next) => {
   const start = Date.now();
