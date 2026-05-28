@@ -5,6 +5,8 @@ import connectPgSimple from "connect-pg-simple";
 import { pool } from "./db";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { storage } from "./storage";
+import { initNeo4j, createConceptNode, createRelationship } from "./neo4j";
 
 const app = express();
 
@@ -49,6 +51,13 @@ app.use(express.urlencoded({
 }));
 
 app.use((req, res, next) => {
+  if (req.path === "/debug-ai-test") {
+    return res.json({ status: "Route Active", db: "Connected", message: "Server is responsive" });
+  }
+  next();
+});
+
+app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
   let capturedJsonResponse: Record<string, any> | undefined = undefined;
@@ -79,6 +88,7 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  initNeo4j();
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
@@ -89,9 +99,11 @@ app.use((req, res, next) => {
     throw err;
   });
 
-  // importantly only setup vite in development and after
-  // setting up all the other routes so the catch-all route
-  // doesn't interfere with the other routes
+
+
+  // Routes are registered via registerRoutes(app) above [cite: 85]
+
+  // Keep this existing part below the code you just pasted:
   if (app.get("env") === "development") {
     await setupVite(app, server);
   } else {
@@ -105,7 +117,7 @@ app.use((req, res, next) => {
   const port = parseInt(process.env.PORT || '5000', 10);
   server.listen({
     port,
-    host: "127.0.0.1",
+    host: "0.0.0.0",
   }, () => {
     log(`serving on port ${port}`);
   });
