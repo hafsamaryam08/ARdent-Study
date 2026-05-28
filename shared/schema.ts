@@ -11,6 +11,7 @@ export const users = pgTable("users", {
   email: text("email").unique(),
   learningStyle: text("learning_style"),
   avatarUrl: text("avatar_url"),
+  role: text("role").default("student"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -21,6 +22,7 @@ export const scannedContent = pgTable("scanned_content", {
   extractedText: text("extracted_text").notNull(),
   imageUrl: text("image_url"),
   concepts: text("concepts").array(),
+  metadata: jsonb("metadata"), // For AR Blueprints
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -32,6 +34,11 @@ export const concepts = pgTable("concepts", {
   difficulty: text("difficulty"),
   relatedConcepts: text("related_concepts").array(),
   multimediaResources: jsonb("multimedia_resources"),
+  annotations: jsonb("annotations"), // For AR Labels
+  proceduralData: jsonb("procedural_data"), // Real-time 3D Primitives
+  modelUrl: text("model_url"),
+  modelStatus: text("model_status"),
+  modelTaskId: text("model_task_id"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -62,6 +69,12 @@ export const knowledgeGraphNodes = pgTable("knowledge_graph_nodes", {
   position: jsonb("position"),
   connections: text("connections").array(),
   userId: varchar("user_id"),
+});
+
+export const session = pgTable("session", {
+  sid: varchar("sid").primaryKey(),
+  sess: jsonb("sess").notNull(),
+  expire: timestamp("expire", { mode: "date" }).notNull(),
 });
 
 export const insertUserSchema = createInsertSchema(users).omit({

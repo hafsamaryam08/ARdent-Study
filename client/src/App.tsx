@@ -10,6 +10,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { useAuth } from "@/hooks/useAuth";
 
 import Dashboard from "@/pages/Dashboard";
+import AdminDashboard from "@/pages/AdminDashboard";
 import ScanContent from "@/pages/ScanContent";
 import Concepts from "@/pages/Concepts";
 import ARViewer from "@/pages/ARViewer";
@@ -40,11 +41,42 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
   return <Component />;
 }
 
+function AdminRoute({ component: Component }: { component: React.ComponentType }) {
+  const { isAuthenticated, isLoading, user } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-lg text-muted-foreground">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Redirect to="/login" />;
+  }
+
+  if (user?.role !== "admin") {
+    return <Redirect to="/" />;
+  }
+
+  return <Component />;
+}
+
 function Router() {
+  const { isAuthenticated } = useAuth();
+
   return (
     <Switch>
-      <Route path="/login" component={Login} />
-      <Route path="/signup" component={Signup} />
+      <Route path="/login">
+        {() => isAuthenticated ? <Redirect to="/" /> : <Login />}
+      </Route>
+      <Route path="/signup">
+        {() => isAuthenticated ? <Redirect to="/" /> : <Signup />}
+      </Route>
+      <Route path="/auth">
+        <Redirect to={isAuthenticated ? "/" : "/login"} />
+      </Route>
       <Route path="/">
         {() => <ProtectedRoute component={Dashboard} />}
       </Route>
@@ -71,6 +103,9 @@ function Router() {
       </Route>
       <Route path="/settings">
         {() => <ProtectedRoute component={Settings} />}
+      </Route>
+      <Route path="/admin">
+        {() => <AdminRoute component={AdminDashboard} />}
       </Route>
       <Route component={NotFound} />
     </Switch>

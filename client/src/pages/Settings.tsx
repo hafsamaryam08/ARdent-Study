@@ -84,11 +84,15 @@ export default function Settings() {
     reader.readAsDataURL(file);
   };
 
-  const [notifications, setNotifications] = useState({
-    reviewReminders: true,
-    quizResults: true,
-    weeklyProgress: false,
-    newConcepts: true,
+  const [notifications, setNotifications] = useState(() => {
+    const saved = localStorage.getItem("ar_learning_notifications");
+    if (saved) return JSON.parse(saved);
+    return {
+      reviewReminders: true,
+      quizResults: true,
+      weeklyProgress: false,
+      newConcepts: true,
+    };
   });
 
   const updateProfileMutation = useMutation({
@@ -151,10 +155,10 @@ export default function Settings() {
   };
 
   const handleSaveNotifications = () => {
-    console.log("Notifications saved", notifications);
+    localStorage.setItem("ar_learning_notifications", JSON.stringify(notifications));
     toast({
       title: "Preferences updated",
-      description: "Your notification preferences have been saved.",
+      description: "Your notification preferences have been saved locally.",
     });
   };
 

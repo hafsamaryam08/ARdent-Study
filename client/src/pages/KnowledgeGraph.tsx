@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { ZoomIn, ZoomOut, Maximize2, Filter } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import ForceGraph2D from 'react-force-graph-2d';
 
 export default function KnowledgeGraph() {
   const [zoom, setZoom] = useState(100);
@@ -14,14 +15,14 @@ export default function KnowledgeGraph() {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [isFullscreen, setIsFullscreen] = useState(false);
 
-  const { data: graphData, isLoading } = useQuery({
+  const { data: graphData, isLoading } = useQuery<any>({
     queryKey: ["/api/knowledge-graph"],
   });
 
   const nodes = graphData?.nodes || [];
   const edges = graphData?.edges || [];
 
-  const categories = ["All", ...new Set(nodes.map((n: any) => n.category))];
+  const categories = ["All", ...Array.from(new Set<string>(nodes.map((n: any) => n.category || "General")))];
 
   const filteredNodes = nodes.filter((node: any) => {
     const query = searchQuery.toLowerCase().trim();
@@ -35,7 +36,14 @@ export default function KnowledgeGraph() {
     return matchesSearch && matchesCategory;
   });
 
-  const selectedNode = selectedNodeId
+  const filteredEdges = edges.filter((e: any) => {
+    const sourceId = typeof e.source === 'object' ? e.source.id : e.source;
+    const targetId = typeof e.target === 'object' ? e.target.id : e.target;
+    return filteredNodes.some((n: any) => n.id === sourceId) &&
+           filteredNodes.some((n: any) => n.id === targetId);
+  });
+
+  const selectedNode: any = selectedNodeId
     ? nodes.find((n: any) => n.id === selectedNodeId)
     : filteredNodes[0];
 
@@ -46,7 +54,7 @@ export default function KnowledgeGraph() {
   // Auto-select first node when graph loads
   useEffect(() => {
     if (nodes.length > 0 && !selectedNodeId) {
-      setSelectedNodeId(nodes[0].id);
+      setSelectedNodeId(nodes[nodes.length - 1].id);
     }
   }, [nodes, selectedNodeId]);
 
@@ -106,18 +114,18 @@ export default function KnowledgeGraph() {
   }
 
   const categoryColors: { [key: string]: string } = {
-    "AI & ML": "bg-blue-500",
-    "Software Engineering": "bg-purple-500",
-    "Data Science": "bg-cyan-500",
-    "Databases": "bg-emerald-500",
-    "Web Development": "bg-orange-500",
-    "Biology": "bg-green-500",
-    "Chemistry": "bg-red-500",
-    "Physics": "bg-yellow-500",
-    "Mathematics": "bg-indigo-500",
-    "Hardware": "bg-slate-500",
-    "Cinematography": "bg-pink-500",
-    "General": "bg-gray-500",
+    "AI & ML": "#3b82f6",
+    "Software Engineering": "#a855f7",
+    "Data Science": "#06b6d4",
+    "Databases": "#10b981",
+    "Web Development": "#f97316",
+    "Biology": "#22c55e",
+    "Chemistry": "#ef4444",
+    "Physics": "#eab308",
+    "Mathematics": "#6366f1",
+    "Hardware": "#64748b",
+    "Cinematography": "#ec4899",
+    "General": "#6b7280",
   };
 
   return (
@@ -241,43 +249,53 @@ export default function KnowledgeGraph() {
             </CardHeader>
             <CardContent className={isFullscreen ? "h-full p-0" : ""}>
               {/* Graph Visualization */}
-              <div className={`relative ${isFullscreen ? "h-full" : "aspect-video"} bg-gradient-to-br from-background/80 via-muted/30 to-background rounded-lg overflow-hidden border border-border/50 p-6`}>
-                <div
-                  style={{
-                    transform: `scale(${zoom / 100})`,
-                    transformOrigin: "top center",
-                    transition: "transform 0.3s ease",
-                  }}
-                >
-                  {/* Nodes Grid */}
-                  <div className="relative w-full flex flex-wrap gap-3 content-start">
-                    {filteredNodes.map((node: any) => {
-                      const colorClass = categoryColors[node.category] || "bg-gray-500";
-                      const isSelected = node.id === selectedNode?.id;
+              <div className={`relative ${isFullscreen ? "h-full" : "aspect-video"} bg-gradient-to-br from-background/80 via-muted/30 to-background rounded-lg overflow-hidden border border-border/50`} style={{ width: '100%', height: isFullscreen ? '100%' : '500px' }}>
+                {typeof window !== "undefined" && (
+                  <ForceGraph2D
+                    graphData={{
+                      nodes: filteredNodes.map((n: any) => ({ ...n })),
+                      links: filteredEdges.map((e: any) => ({ ...e }))
+                    }}
+                    nodeLabel="label"
+                    nodeColor={(node: any) => categoryColors[node.category] || "#6b7280"}
+                    nodeRelSize={6}
+                    linkColor={() => "#cbd5e1"}
+                    linkWidth={1.5}
+                    nodeCanvasObject={(node: any, ctx: any, globalScale: number) => {
+                      const label = node.label;
+                      const fontSize = 12 / globalScale;
+                      ctx.font = `${fontSize}px Sans-Serif`;
+                      
+                      // Draw Node Circle
+                      ctx.beginPath();
+                      ctx.arc(node.x, node.y, 5, 0, 2 * Math.PI, false);
+                      ctx.fillStyle = categoryColors[node.category] || "#6b7280";
+                      ctx.fill();
+                      
+                      // Draw Text Background for readability
+                      const textWidth = ctx.measureText(label).width;
+                      const bckgDimensions = [textWidth, fontSize].map(n => n + fontSize * 0.2);
+                      ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+                      ctx.fillRect(node.x - bckgDimensions[0] / 2, node.y + 6, bckgDimensions[0], bckgDimensions[1]);
 
-                      return (
-                        <button
-                          key={node.id}
-                          onClick={() => setSelectedNodeId(node.id)}
-                          className={`px-4 py-2 rounded-lg font-medium text-sm text-white cursor-pointer transition-all duration-200 ${
-                            colorClass
-                          } ${isSelected ? "ring-2 ring-offset-2 ring-foreground shadow-lg scale-105" : "hover:opacity-90 shadow"}`}
-                          data-testid={`node-${node.id}`}
-                          title={node.label}
-                        >
-                          {node.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
+                      // Draw Text
+                      ctx.textAlign = 'center';
+                      ctx.textBaseline = 'top';
+                      ctx.fillStyle = '#1f2937'; // Dark text
+                      ctx.fillText(label, node.x, node.y + 7);
+                    }}
+                    onNodeClick={(node: any) => setSelectedNodeId(node.id)}
+                    width={document.getElementById('graph-container')?.clientWidth || 800}
+                    height={isFullscreen ? window.innerHeight - 100 : 500}
+                  />
+                )}
               </div>
 
               {/* Legend */}
               <div className="mt-6 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-                {Array.from(new Set(nodes.map((n: any) => n.category))).map((category) => (
+                {Array.from(new Set<string>(nodes.map((n: any) => n.category || "General"))).map((category: any) => (
                   <div key={category} className="flex items-center gap-2 p-2 rounded-lg border border-border/50 bg-muted/50">
-                    <div className={`h-3 w-3 rounded-full ${categoryColors[category] || "bg-gray-400"}`} />
+                    <div className={`h-3 w-3 rounded-full`} style={{ backgroundColor: categoryColors[category] || "#6b7280" }} />
                     <span className="text-xs font-medium">{category}</span>
                   </div>
                 ))}

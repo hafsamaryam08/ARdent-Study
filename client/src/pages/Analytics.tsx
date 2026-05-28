@@ -5,19 +5,19 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { TrendingUp, Target, Award, Calendar } from "lucide-react";
 
 export default function Analytics() {
-  const { data: stats } = useQuery({
+  const { data: stats } = useQuery<any>({
     queryKey: ["/api/dashboard/stats"],
   });
 
-  const { data: quizzes = [] } = useQuery({
+  const { data: quizzes = [] } = useQuery<any>({
     queryKey: ["/api/quizzes"],
   });
 
-  const { data: concepts = [] } = useQuery({
+  const { data: concepts = [] } = useQuery<any>({
     queryKey: ["/api/concepts"],
   });
 
-  const { data: progress = [] } = useQuery({
+  const { data: progress = [] } = useQuery<any>({
     queryKey: ["/api/progress"],
   });
 
@@ -48,24 +48,38 @@ export default function Analytics() {
   const getWeeklyActivity = () => {
     const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
     const today = new Date();
+    today.setHours(0, 0, 0, 0);
     const weekStart = new Date(today);
     weekStart.setDate(today.getDate() - 6);
     
-    return days.map((day, index) => {
+    return days.map((_, index) => {
       const dayDate = new Date(weekStart);
-      dayDate.setDate(weekStart.getDate() + ((7 - weekStart.getDay() + index) % 7));
+      dayDate.setDate(weekStart.getDate() + index);
+      const nextDay = new Date(dayDate);
+      nextDay.setDate(dayDate.getDate() + 1);
       
-      const scanCount = Math.floor(Math.random() * 3);
-      const quizCount = Math.floor(Math.random() * 2);
+      const dayName = days[dayDate.getDay()];
       
-      return { day, scans: scanCount, quizzes: quizCount };
+      const scansForDay = concepts.filter((c: any) => {
+        if (!c.createdAt) return false;
+        const d = new Date(c.createdAt);
+        return d >= dayDate && d < nextDay;
+      }).length;
+      
+      const quizzesForDay = quizzes.filter((q: any) => {
+        if (!q.createdAt) return false;
+        const d = new Date(q.createdAt);
+        return d >= dayDate && d < nextDay;
+      }).length;
+      
+      return { day: dayName, scans: scansForDay, quizzes: quizzesForDay };
     });
   };
 
   const weeklyActivity = getWeeklyActivity();
 
   const averageScore = quizScores.length > 0
-    ? Math.round(quizScores.reduce((sum, q) => sum + q.score, 0) / quizScores.length)
+    ? Math.round(quizScores.reduce((sum: number, q: any) => sum + q.score, 0) / quizScores.length)
     : 0;
 
   return (

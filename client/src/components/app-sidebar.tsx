@@ -8,6 +8,8 @@ import {
   Trophy,
   BarChart3,
   Users,
+  LogOut,
+  ShieldAlert,
 } from "lucide-react";
 import {
   Sidebar,
@@ -20,6 +22,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { Link, useLocation } from "wouter";
+import { useAuth } from "@/hooks/useAuth";
 
 const menuItems = [
   {
@@ -71,17 +74,28 @@ const menuItems = [
 
 export function AppSidebar() {
   const [location] = useLocation();
+  const { logout, user } = useAuth();
+
+  const activeMenuItems = [
+    ...menuItems,
+    ...(user?.role === "admin" ? [{ title: "Admin Panel", url: "/admin", icon: ShieldAlert }] : [])
+  ];
 
   return (
     <Sidebar>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel className="text-lg font-display font-semibold px-4 py-4">
-            AR Learning
+          <SidebarGroupLabel className="h-14 px-4 py-8 mb-4">
+            <Link href="/" className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center p-1 border border-primary/20 shadow-sm">
+                <img src="/logo.png" alt="Logo" className="h-full w-full object-contain" />
+              </div>
+              <span className="text-xl font-display font-bold tracking-tight text-foreground">ARdent Study</span>
+            </Link>
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {menuItems.map((item) => (
+              {activeMenuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
                     asChild
@@ -97,6 +111,20 @@ export function AppSidebar() {
               ))}
             </SidebarMenu>
           </SidebarGroupContent>
+          <div className="p-4 mt-auto">
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  onClick={() => logout()}
+                  className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                  data-testid="button-logout"
+                >
+                  <LogOut className="h-5 w-5" />
+                  <span>Logout</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </div>
         </SidebarGroup>
       </SidebarContent>
     </Sidebar>

@@ -1,11 +1,13 @@
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 
 interface ThreeDModelProps {
   modelType: string;
   title: string;
   rotation: number;
   zoom: number;
+  modelUrl?: string;
 }
 
 // Create a realistic 3D heart
@@ -178,6 +180,303 @@ function createComputerGeometry(): THREE.BufferGeometry {
   return geometry;
 }
 
+// 1. Chemistry (Molecule)
+function createMoleculeGeometry(): THREE.BufferGeometry {
+  const vertices: number[] = [];
+  const indices: number[] = [];
+  let vOffset = 0;
+
+  const addGeom = (geo: THREE.BufferGeometry, matrix: THREE.Matrix4) => {
+    geo.applyMatrix4(matrix);
+    const pos = geo.getAttribute('position');
+    const idx = geo.getIndex();
+    if (!pos) return;
+    
+    vertices.push(...Array.from(pos.array));
+    if (idx) {
+      indices.push(...Array.from(idx.array).map(i => i + vOffset));
+    }
+    vOffset += pos.count;
+  };
+
+  // Center atom
+  addGeom(new THREE.IcosahedronGeometry(0.3, 2), new THREE.Matrix4());
+
+  // 3 outer atoms
+  for (let i = 0; i < 3; i++) {
+    const angle = (i / 3) * Math.PI * 2;
+    const x = Math.cos(angle) * 0.8;
+    const y = (i % 2 === 0) ? 0.3 : -0.3;
+    const z = Math.sin(angle) * 0.8;
+
+    // Atom
+    const m1 = new THREE.Matrix4().makeTranslation(x, y, z);
+    addGeom(new THREE.IcosahedronGeometry(0.2, 2), m1);
+
+    // Bond (Cylinder)
+    const bond = new THREE.CylinderGeometry(0.05, 0.05, 1, 8);
+    const m2 = new THREE.Matrix4();
+    const posVec = new THREE.Vector3(x, y, z);
+    const up = new THREE.Vector3(0, 1, 0);
+    const quaternion = new THREE.Quaternion().setFromUnitVectors(up, posVec.clone().normalize());
+    m2.makeRotationFromQuaternion(quaternion);
+    m2.setPosition(posVec.multiplyScalar(0.5));
+    addGeom(bond, m2);
+  }
+
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(vertices), 3));
+  geometry.setIndex(new THREE.BufferAttribute(new Uint32Array(indices), 1));
+  geometry.computeVertexNormals();
+  return geometry;
+}
+
+// 2. AI / ML (Neural Network)
+function createNeuralNetworkGeometry(): THREE.BufferGeometry {
+  const vertices: number[] = [];
+  const indices: number[] = [];
+  let vOffset = 0;
+
+  const addGeom = (geo: THREE.BufferGeometry, tx: number, ty: number, tz: number) => {
+    geo.translate(tx, ty, tz);
+    const pos = geo.getAttribute('position');
+    const idx = geo.getIndex();
+    vertices.push(...Array.from(pos.array));
+    if (idx) indices.push(...Array.from(idx.array).map(i => i + vOffset));
+    vOffset += pos.count;
+  };
+
+  const layers = [3, 4, 3];
+  const spacingX = 0.8;
+  const spacingY = 0.5;
+  const nodes: THREE.Vector3[][] = [];
+
+  // Create nodes
+  layers.forEach((count, i) => {
+    nodes[i] = [];
+    const x = (i - 1) * spacingX;
+    for (let j = 0; j < count; j++) {
+      const y = (j - (count - 1) / 2) * spacingY;
+      nodes[i].push(new THREE.Vector3(x, y, 0));
+      addGeom(new THREE.SphereGeometry(0.1, 16, 16), x, y, 0);
+    }
+  });
+
+  // Create connections
+  for (let i = 0; i < layers.length - 1; i++) {
+    for (const n1 of nodes[i]) {
+      for (const n2 of nodes[i+1]) {
+        const distance = n1.distanceTo(n2);
+        const cyl = new THREE.CylinderGeometry(0.015, 0.015, distance, 6);
+        const mid = n1.clone().lerp(n2, 0.5);
+        cyl.translate(0, distance / 2, 0);
+        cyl.rotateX(Math.PI / 2);
+        const look = new THREE.Matrix4().lookAt(n1, n2, new THREE.Vector3(0, 1, 0));
+        cyl.applyMatrix4(look);
+        addGeom(cyl, mid.x, mid.y, mid.z);
+      }
+    }
+  }
+
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(vertices), 3));
+  geometry.setIndex(new THREE.BufferAttribute(new Uint32Array(indices), 1));
+  geometry.computeVertexNormals();
+  return geometry;
+}
+
+// 3. Chair
+function createChairGeometry(): THREE.BufferGeometry {
+  const vertices: number[] = [];
+  const indices: number[] = [];
+  let vOffset = 0;
+
+  const addGeom = (geo: THREE.BufferGeometry) => {
+    const pos = geo.getAttribute('position');
+    const idx = geo.getIndex();
+    vertices.push(...Array.from(pos.array));
+    if (idx) indices.push(...Array.from(idx.array).map(i => i + vOffset));
+    vOffset += pos.count;
+  };
+
+  const seat = new THREE.BoxGeometry(1, 0.1, 1);
+  addGeom(seat);
+
+  const back = new THREE.BoxGeometry(1, 1, 0.1);
+  back.translate(0, 0.55, -0.45);
+  addGeom(back);
+
+  const legs = [
+    [-0.4, -0.5, -0.4],
+    [0.4, -0.5, -0.4],
+    [-0.4, -0.5, 0.4],
+    [0.4, -0.5, 0.4],
+  ];
+  legs.forEach(([x, y, z]) => {
+    const leg = new THREE.BoxGeometry(0.1, 1, 0.1);
+    leg.translate(x, y, z);
+    addGeom(leg);
+  });
+
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(vertices), 3));
+  geometry.setIndex(new THREE.BufferAttribute(new Uint32Array(indices), 1));
+  geometry.computeVertexNormals();
+  return geometry;
+}
+
+// 4. Table
+function createTableGeometry(): THREE.BufferGeometry {
+  const vertices: number[] = [];
+  const indices: number[] = [];
+  let vOffset = 0;
+
+  const addGeom = (geo: THREE.BufferGeometry) => {
+    const pos = geo.getAttribute('position');
+    const idx = geo.getIndex();
+    vertices.push(...Array.from(pos.array));
+    if (idx) indices.push(...Array.from(idx.array).map(i => i + vOffset));
+    vOffset += pos.count;
+  };
+
+  const top = new THREE.BoxGeometry(2, 0.1, 1.2);
+  top.translate(0, 0.5, 0);
+  addGeom(top);
+
+  const legs = [
+    [-0.9, 0, -0.5],
+    [0.9, 0, -0.5],
+    [-0.9, 0, 0.5],
+    [0.9, 0, 0.5],
+  ];
+  legs.forEach(([x, y, z]) => {
+    const leg = new THREE.CylinderGeometry(0.05, 0.05, 1, 12);
+    leg.translate(x, y, z);
+    addGeom(leg);
+  });
+
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(vertices), 3));
+  geometry.setIndex(new THREE.BufferAttribute(new Uint32Array(indices), 1));
+  geometry.computeVertexNormals();
+  return geometry;
+}
+
+// 5. Laptop
+function createLaptopGeometry(): THREE.BufferGeometry {
+  const vertices: number[] = [];
+  const indices: number[] = [];
+  let vOffset = 0;
+
+  const addGeom = (geo: THREE.BufferGeometry) => {
+    const pos = geo.getAttribute('position');
+    const idx = geo.getIndex();
+    vertices.push(...Array.from(pos.array));
+    if (idx) indices.push(...Array.from(idx.array).map(i => i + vOffset));
+    vOffset += pos.count;
+  };
+
+  const base = new THREE.BoxGeometry(1.4, 0.05, 1);
+  addGeom(base);
+
+  const screen = new THREE.BoxGeometry(1.4, 0.9, 0.05);
+  screen.translate(0, 0.45, -0.475);
+  screen.rotateX(-0.1); // slight tilt back
+  addGeom(screen);
+
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(vertices), 3));
+  geometry.setIndex(new THREE.BufferAttribute(new Uint32Array(indices), 1));
+  geometry.computeVertexNormals();
+  return geometry;
+}
+
+// 6. Galaxy / Space
+function createGalaxyGeometry(): THREE.BufferGeometry {
+  const vertices: number[] = [];
+  const indices: number[] = [];
+  
+  // Create a swirling galaxy shape using small spheres
+  let vOffset = 0;
+  for (let i = 0; i < 200; i++) {
+    const radius = Math.random() * 1.5;
+    const angle = radius * 5 + Math.random() * Math.PI * 2; // Spiral effect
+    const x = Math.cos(angle) * radius;
+    const y = (Math.random() - 0.5) * 0.2 * (1.5 - radius); // Thicker at center
+    const z = Math.sin(angle) * radius;
+
+    const star = new THREE.SphereGeometry(0.02 + Math.random() * 0.03, 4, 4);
+    star.translate(x, y, z);
+    
+    const pos = star.getAttribute('position');
+    const idx = star.getIndex();
+    vertices.push(...Array.from(pos.array));
+    if (idx) indices.push(...Array.from(idx.array).map(i => i + vOffset));
+    vOffset += pos.count;
+  }
+
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(vertices), 3));
+  geometry.setIndex(new THREE.BufferAttribute(new Uint32Array(indices), 1));
+  geometry.computeVertexNormals();
+  return geometry;
+}
+
+// 7. Cartoon Character (Pink Panther style)
+function createCartoonGeometry(): THREE.BufferGeometry {
+  const vertices: number[] = [];
+  const indices: number[] = [];
+  let vOffset = 0;
+
+  const addGeom = (geo: THREE.BufferGeometry) => {
+    const pos = geo.getAttribute('position');
+    const idx = geo.getIndex();
+    vertices.push(...Array.from(pos.array));
+    if (idx) indices.push(...Array.from(idx.array).map(i => i + vOffset));
+    vOffset += pos.count;
+  };
+
+  // Head
+  const head = new THREE.SphereGeometry(0.4, 32, 32);
+  addGeom(head);
+
+  // Snout (long)
+  const snout = new THREE.CylinderGeometry(0.15, 0.2, 0.5, 32);
+  snout.rotateX(Math.PI / 2);
+  snout.translate(0, -0.1, 0.4);
+  addGeom(snout);
+  
+  // Nose tip
+  const nose = new THREE.SphereGeometry(0.1, 16, 16);
+  nose.translate(0, -0.1, 0.65);
+  addGeom(nose);
+
+  // Ears
+  const ear1 = new THREE.SphereGeometry(0.15, 16, 16);
+  ear1.translate(0.3, 0.3, 0);
+  addGeom(ear1);
+
+  const ear2 = new THREE.SphereGeometry(0.15, 16, 16);
+  ear2.translate(-0.3, 0.3, 0);
+  addGeom(ear2);
+
+  // Eyes (bulging)
+  const eye1 = new THREE.SphereGeometry(0.12, 16, 16);
+  eye1.translate(0.15, 0.1, 0.3);
+  addGeom(eye1);
+
+  const eye2 = new THREE.SphereGeometry(0.12, 16, 16);
+  eye2.translate(-0.15, 0.1, 0.3);
+  addGeom(eye2);
+
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(vertices), 3));
+  geometry.setIndex(new THREE.BufferAttribute(new Uint32Array(indices), 1));
+  geometry.computeVertexNormals();
+  return geometry;
+}
+
+
 // Create realistic lens/camera optical element
 function createLensGeometry(): THREE.BufferGeometry {
   const vertices = [];
@@ -255,9 +554,17 @@ function createLensGeometry(): THREE.BufferGeometry {
   return geometry;
 }
 
-export function ThreeDModel({ modelType, title, rotation, zoom }: ThreeDModelProps) {
+export function ThreeDModel({ modelType, title, rotation, zoom, modelUrl }: ThreeDModelProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const meshRef = useRef<THREE.Mesh | null>(null);
+  const rotationRef = useRef(rotation);
+  const zoomRef = useRef(zoom);
+
+  // Update refs when props change without triggering the main scene effect
+  useEffect(() => {
+    rotationRef.current = rotation;
+    zoomRef.current = zoom;
+  }, [rotation, zoom]);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -294,7 +601,10 @@ export function ThreeDModel({ modelType, title, rotation, zoom }: ThreeDModelPro
     pointLight.position.set(-5, 5, 5);
     scene.add(pointLight);
 
-    let geometry: THREE.BufferGeometry;
+    const modelGroup = new THREE.Group();
+    scene.add(modelGroup);
+    meshRef.current = modelGroup as any;
+
     let materialColor = 0x4f46e5;
     let wireframe = false;
 
@@ -303,59 +613,173 @@ export function ThreeDModel({ modelType, title, rotation, zoom }: ThreeDModelPro
 
     console.log("Creating 3D model:", typeStr, titleStr);
 
-    // Exact models based on content
-    if (typeStr.includes("organic") || titleStr.includes("heart")) {
-      geometry = createHeartGeometry();
-      materialColor = 0xef4444; // Bright red
-    } else if (typeStr.includes("dna") || titleStr.includes("dna") || titleStr.includes("helix")) {
-      geometry = createDNAGeometry();
-      materialColor = 0x0066ff; // Bright blue
-    } else if (
-      titleStr.includes("computer") ||
-      titleStr.includes("hardware") ||
-      titleStr.includes("monitor") ||
-      titleStr.includes("cpu") ||
-      titleStr.includes("processor")
-    ) {
-      geometry = createComputerGeometry();
-      materialColor = 0x2c3e50; // Dark blue-gray
-    } else if (titleStr.includes("lens") || titleStr.includes("camera") || titleStr.includes("optic")) {
-      geometry = createLensGeometry();
-      materialColor = 0x00ccff; // Cyan lens
-    } else if (typeStr.includes("molecular")) {
-      geometry = new THREE.IcosahedronGeometry(1, 5);
-      materialColor = 0xef4444;
-    } else if (typeStr.includes("motion")) {
-      geometry = new THREE.TorusGeometry(0.8, 0.25, 20, 150);
-      materialColor = 0xeab308;
-    } else {
-      geometry = new THREE.SphereGeometry(1, 64, 64);
-      materialColor = 0x8b5cf6;
-    }
+    const initFallback = () => {
+      let geometry: THREE.BufferGeometry;
+      if (typeStr.includes("biology") || typeStr.includes("organic") || titleStr.includes("heart") || titleStr.includes("dna") || titleStr.includes("cell")) {
+        geometry = titleStr.includes("heart") ? createHeartGeometry() : createDNAGeometry();
+        materialColor = titleStr.includes("heart") ? 0xef4444 : 0x0066ff;
+      } else if (
+        typeStr.includes("hardware") || titleStr.includes("computer") || titleStr.includes("cpu")
+      ) {
+        geometry = createComputerGeometry();
+        materialColor = 0x2c3e50;
+      } else if (titleStr.includes("laptop")) {
+        geometry = createLaptopGeometry();
+        materialColor = 0x94a3b8;
+      } else if (typeStr.includes("cinematography") || titleStr.includes("lens") || titleStr.includes("camera")) {
+        geometry = createLensGeometry();
+        materialColor = 0x00ccff;
+      } else if (typeStr.includes("chemistry") || titleStr.includes("molecule") || titleStr.includes("atom")) {
+        geometry = createMoleculeGeometry();
+        materialColor = 0x10b981; // Emerald green
+      } else if (typeStr.includes("ai") || typeStr.includes("machine learning") || titleStr.includes("neural") || titleStr.includes("algorithm")) {
+        geometry = createNeuralNetworkGeometry();
+        materialColor = 0x8b5cf6; // Purple
+      } else if (typeStr.includes("software") || typeStr.includes("web") || typeStr.includes("data")) {
+        // Abstract representation of code/data
+        geometry = new THREE.IcosahedronGeometry(1, 1);
+        materialColor = 0x3b82f6; // Blue
+      } else if (titleStr.includes("chair")) {
+        geometry = createChairGeometry();
+        materialColor = 0xb45309;
+      } else if (titleStr.includes("table") || titleStr.includes("desk")) {
+        geometry = createTableGeometry();
+        materialColor = 0x78350f;
+      } else if (typeStr.includes("physics") || titleStr.includes("space") || titleStr.includes("galaxy")) {
+        geometry = createGalaxyGeometry();
+        materialColor = 0xfde047;
+      } else if (titleStr.includes("cartoon") || titleStr.includes("panther")) {
+        geometry = createCartoonGeometry();
+        materialColor = titleStr.includes("panther") ? 0xff69b4 : 0xf97316;
+      } else if (typeStr.includes("motion")) {
+        geometry = new THREE.TorusGeometry(0.8, 0.25, 20, 150);
+        materialColor = 0xeab308;
+      } else {
+        geometry = new THREE.SphereGeometry(1, 64, 64);
+        materialColor = 0x8b5cf6;
+      }
 
-    const material = new THREE.MeshPhongMaterial({
-      color: materialColor,
-      emissive: 0x111111,
-      shininess: 120,
-      wireframe: wireframe,
-      side: THREE.DoubleSide,
-      flatShading: false,
-    });
+      const material = new THREE.MeshPhongMaterial({
+        color: materialColor,
+        emissive: 0x111111,
+        shininess: 120,
+        wireframe: wireframe,
+        side: THREE.DoubleSide,
+        flatShading: false,
+      });
 
-    const mesh = new THREE.Mesh(geometry, material);
-    mesh.castShadow = true;
-    mesh.receiveShadow = true;
-    meshRef.current = mesh;
-    scene.add(mesh);
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
+      return mesh;
+    };
+
+    const loader = new GLTFLoader();
+    
+    const tryLoadGLTF = () => {
+      const paths: string[] = [];
+      if (modelUrl) {
+        paths.push(modelUrl);
+      }
+
+      // Keyword mapping to local GLB files
+      const modelMap: Record<string, string> = {
+        'heart': 'heart.glb',
+        'brain': 'brain_project.glb',
+        'car': 'cartoon_car.glb',
+        'chemistry': 'chemical_reaction.glb',
+        'reaction': 'chemical_reaction.glb',
+        'jet': 'combat_jet_animation.glb',
+        'plane': 'combat_jet_animation.glb',
+        'computer': 'computer_monitor_169_low_poly_game_ready.glb',
+        'monitor': 'computer_monitor_169_low_poly_game_ready.glb',
+        'mountain': 'great_mountain.glb',
+        'jellyfish': 'jellyfish.glb',
+        'lantern': 'lantern.glb',
+        'octopus': 'octopus_plush.glb',
+        'orchid': 'orchid_flower.glb',
+        'flower': 'orchid_flower.glb',
+        'plant': 'orchid_flower.glb',
+        'pakistan': 'pakistan_map_3d_model.glb',
+        'physics': 'physics_3december_day_16.glb',
+        'pony': 'pony_cartoon.glb',
+        'horse': 'pony_cartoon.glb',
+        'lung': 'realistic_human_lungs.glb',
+        'solar': 'solar_system_custom.glb',
+        'space': 'solar_system_custom.glb',
+        'toyota': 'toyota_camry_2020.glb',
+        'box': 'box.glb'
+      };
+
+      let mappedModel = null;
+      for (const [key, file] of Object.entries(modelMap)) {
+        if (titleStr.includes(key) || typeStr.includes(key)) {
+          mappedModel = file;
+          break;
+        }
+      }
+      
+      if (mappedModel) {
+        paths.push(`/models/${mappedModel}`);
+      }
+      
+      paths.push(
+        `/models/${titleStr.replace(/\s+/g, '_')}.glb`,
+        `/models/${titleStr}.glb`, 
+        `/models/${typeStr}.glb`
+      );
+      
+      const attemptLoad = (index: number) => {
+        if (index >= paths.length) {
+          const mesh = initFallback();
+          modelGroup.add(mesh);
+          return;
+        }
+        
+        console.log(`Attempting to load GLTF from: ${paths[index]}`);
+        loader.load(
+          paths[index],
+          (gltf: any) => {
+            const object = gltf.scene;
+            
+            // Center and scale the loaded model to fit nicely
+            const box = new THREE.Box3().setFromObject(object);
+            const center = box.getCenter(new THREE.Vector3());
+            const size = box.getSize(new THREE.Vector3());
+            
+            const maxDim = Math.max(size.x, size.y, size.z);
+            const scale = 2.0 / (maxDim || 1);
+            object.scale.set(scale, scale, scale);
+            
+            // Adjust position so center is at 0,0,0
+            object.position.x = -center.x * scale;
+            object.position.y = -center.y * scale;
+            object.position.z = -center.z * scale;
+            
+            modelGroup.add(object);
+          },
+          undefined, // onProgress
+          (error) => {
+            console.error(`Error loading model from ${paths[index]}:`, error);
+            // onError, try next path
+            attemptLoad(index + 1);
+          }
+        );
+      };
+      
+      attemptLoad(0);
+    };
+
+    tryLoadGLTF();
 
     let frameId: number;
     const animate = () => {
       frameId = requestAnimationFrame(animate);
 
       if (meshRef.current) {
-        meshRef.current.rotation.x = (rotation * Math.PI) / 180;
+        meshRef.current.rotation.x = (rotationRef.current * Math.PI) / 180;
         meshRef.current.rotation.y += 0.003;
-        const scale = zoom / 100;
+        const scale = zoomRef.current / 100;
         meshRef.current.scale.set(scale, scale, scale);
       }
 
@@ -367,13 +791,26 @@ export function ThreeDModel({ modelType, title, rotation, zoom }: ThreeDModelPro
     return () => {
       cancelAnimationFrame(frameId);
       renderer.dispose();
-      geometry.dispose();
-      material.dispose();
+      
+      modelGroup.traverse((child: any) => {
+        if ((child as THREE.Mesh).isMesh) {
+          const mesh = child as THREE.Mesh;
+          if (mesh.geometry) mesh.geometry.dispose();
+          if (mesh.material) {
+            if (Array.isArray(mesh.material)) {
+              mesh.material.forEach((m: any) => m.dispose());
+            } else {
+              mesh.material.dispose();
+            }
+          }
+        }
+      });
+      
       if (containerRef.current?.contains(renderer.domElement)) {
         containerRef.current.removeChild(renderer.domElement);
       }
     };
-  }, [modelType, title, rotation, zoom]);
+  }, [modelType, title, modelUrl]);
 
   return <div ref={containerRef} className="w-full h-full" style={{ minHeight: "400px" }} />;
 }

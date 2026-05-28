@@ -2,8 +2,10 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Trophy, Medal, Award, Crown, Star } from "lucide-react";
+import { Trophy, Medal, Award, Crown, Star, ArrowRight } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { useLocation } from "wouter";
 
 interface LeaderboardEntry {
   rank: number;
@@ -17,24 +19,23 @@ interface LeaderboardEntry {
 }
 
 export default function Leaderboard() {
-  const { data: user } = useQuery({
+  const [, setLocation] = useLocation();
+  const { data: user } = useQuery<any>({
     queryKey: ["/api/auth/me"],
   });
 
-  const { data: stats } = useQuery({
+  const { data: stats } = useQuery<any>({
     queryKey: ["/api/dashboard/stats"],
   });
 
-  const mockLeaderboard: LeaderboardEntry[] = [
-    { rank: 1, username: "star_learner", fullName: "Alex Chen", score: 2450, conceptsLearned: 45, quizzesCompleted: 32, streak: 15 },
-    { rank: 2, username: "knowledge_seeker", fullName: "Maya Patel", score: 2280, conceptsLearned: 42, quizzesCompleted: 28, streak: 12 },
-    { rank: 3, username: "study_master", fullName: "Jordan Lee", score: 2100, conceptsLearned: 38, quizzesCompleted: 25, streak: 10 },
-    { rank: 4, username: "brain_power", fullName: "Sam Wilson", score: 1950, conceptsLearned: 35, quizzesCompleted: 22, streak: 8 },
-    { rank: 5, username: "curious_mind", fullName: "Taylor Brown", score: 1820, conceptsLearned: 32, quizzesCompleted: 20, streak: 7 },
-  ];
+  const { data: leaderboardData = [], isLoading } = useQuery<any[]>({
+    queryKey: ["/api/leaderboard"],
+  });
 
   const userScore = (stats?.conceptsLearned || 0) * 50 + (stats?.quizzesCompleted || 0) * 30 + (stats?.currentStreak || 0) * 10;
-  const userRank = mockLeaderboard.filter(e => e.score > userScore).length + 1;
+  
+  const currentUserEntry = leaderboardData.find((e: any) => e.username === user?.username);
+  const userRank = currentUserEntry?.rank || (leaderboardData.filter((e: any) => e.score > userScore).length + 1);
 
   const getRankIcon = (rank: number) => {
     if (rank === 1) return <Crown className="h-5 w-5 text-yellow-500" />;
@@ -67,7 +68,7 @@ export default function Leaderboard() {
                 <Avatar className="h-16 w-16 ring-2 ring-primary ring-offset-2">
                   <AvatarImage src={user?.avatarUrl} />
                   <AvatarFallback className="text-lg">
-                    {user?.fullName?.split(" ").map((n: string) => n[0]).join("").toUpperCase() || "U"}
+                    {(user?.fullName || user?.username || "U").charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
                 <div className="absolute -bottom-1 -right-1 bg-primary text-primary-foreground rounded-full p-1">
@@ -97,37 +98,47 @@ export default function Leaderboard() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {mockLeaderboard.map((entry) => (
-              <div
-                key={entry.rank}
-                className={`flex items-center gap-4 p-4 rounded-lg border ${getRankBadge(entry.rank)}`}
-              >
-                <div className="flex items-center justify-center w-10 h-10">
-                  {getRankIcon(entry.rank)}
-                </div>
-                <Avatar className="h-10 w-10">
-                  <AvatarImage src={entry.avatarUrl} />
-                  <AvatarFallback>
-                    {entry.fullName?.split(" ").map(n => n[0]).join("").toUpperCase() || "U"}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1">
-                  <div className="font-medium">{entry.fullName || entry.username}</div>
-                  <div className="text-xs text-muted-foreground">@{entry.username}</div>
-                </div>
-                <div className="text-right space-y-1">
-                  <div className="font-bold">{entry.score} pts</div>
-                  <div className="flex gap-2">
-                    <Badge variant="secondary" className="text-xs">
-                      {entry.conceptsLearned} concepts
-                    </Badge>
-                    <Badge variant="secondary" className="text-xs">
-                      {entry.streak} day streak
-                    </Badge>
+            {isLoading ? (
+              <div className="space-y-3">
+                <Skeleton className="h-20 w-full" />
+                <Skeleton className="h-20 w-full" />
+                <Skeleton className="h-20 w-full" />
+              </div>
+            ) : leaderboardData.length === 0 ? (
+              <p className="text-center text-muted-foreground py-8">No learners on the leaderboard yet.</p>
+            ) : (
+              leaderboardData.slice(0, 10).map((entry: any) => (
+                <div
+                  key={entry.rank}
+                  className={`flex items-center gap-4 p-4 rounded-lg border ${getRankBadge(entry.rank)}`}
+                >
+                  <div className="flex items-center justify-center w-10 h-10">
+                    {getRankIcon(entry.rank)}
+                  </div>
+                  <Avatar className="h-10 w-10">
+                    <AvatarImage src={entry.avatarUrl} />
+                    <AvatarFallback>
+                      {(entry.fullName || entry.username || "U").charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1">
+                    <div className="font-medium">{entry.fullName || entry.username}</div>
+                    <div className="text-xs text-muted-foreground">@{entry.username}</div>
+                  </div>
+                  <div className="text-right space-y-1">
+                    <div className="font-bold">{entry.score} pts</div>
+                    <div className="flex gap-2">
+                      <Badge variant="secondary" className="text-xs">
+                        {entry.conceptsLearned} concepts
+                      </Badge>
+                      <Badge variant="secondary" className="text-xs">
+                        {entry.streak} day streak
+                      </Badge>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </CardContent>
       </Card>
@@ -141,7 +152,6 @@ export default function Leaderboard() {
             <p>+50 points per concept learned</p>
             <p>+30 points per quiz completed</p>
             <p>+10 points per day streak</p>
-            <p>Bonus points for high quiz scores</p>
           </CardContent>
         </Card>
 
@@ -151,15 +161,15 @@ export default function Leaderboard() {
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Concepts Learned</span>
+              <span className="text-muted-foreground">Concepts</span>
               <span className="font-medium">{stats?.conceptsLearned || 0}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Quizzes Completed</span>
+              <span className="text-muted-foreground">Quizzes</span>
               <span className="font-medium">{stats?.quizzesCompleted || 0}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Current Streak</span>
+              <span className="text-muted-foreground">Streak</span>
               <span className="font-medium">{stats?.currentStreak || 0} days</span>
             </div>
           </CardContent>
@@ -171,14 +181,14 @@ export default function Leaderboard() {
           </CardHeader>
           <CardContent>
             <div className="flex gap-2 flex-wrap">
-              <Badge variant="outline" className="gap-1">
-                <Star className="h-3 w-3" /> First Scan
+              <Badge variant="outline" className="gap-1 bg-primary/5">
+                <Star className="h-3 w-3 text-primary" /> {stats?.scannedPages > 0 ? "First Scan" : "Started"}
               </Badge>
-              <Badge variant="outline" className="gap-1">
-                <Award className="h-3 w-3" /> Quiz Master
+              <Badge variant="outline" className="gap-1 bg-chart-2/5">
+                <Award className="h-3 w-3 text-chart-2" /> {stats?.quizzesCompleted > 0 ? "Quizzer" : "Beginner"}
               </Badge>
-              <Badge variant="outline" className="gap-1">
-                <Trophy className="h-3 w-3" /> 7 Day Streak
+              <Badge variant="outline" className="gap-1 bg-chart-4/5">
+                <Trophy className="h-3 w-3 text-chart-4" /> {stats?.currentStreak || 0} Day Streak
               </Badge>
             </div>
           </CardContent>

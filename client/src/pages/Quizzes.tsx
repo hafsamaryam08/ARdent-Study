@@ -18,14 +18,17 @@ interface Concept {
   term: string;
   definition: string;
   category?: string;
+  createdAt?: string;
 }
 
 interface Quiz {
   id: string;
+  conceptId: string;
   title: string;
   questions: Question[];
   score?: number;
   completed: boolean;
+  createdAt?: string;
 }
 
 export default function Quizzes() {
@@ -35,6 +38,7 @@ export default function Quizzes() {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [showScore, setShowScore] = useState(false);
   const [finalScore, setFinalScore] = useState(0);
+  const [numQuestions, setNumQuestions] = useState(5);
 
   const { data: quizzes, isLoading, refetch } = useQuery<Quiz[]>({
     queryKey: ["/api/quizzes"],
@@ -46,9 +50,20 @@ export default function Quizzes() {
     queryFn: getQueryFn({ on401: "throw" }),
   });
 
+  // Filter only for the latest scan concepts
+  const latestScanTime = concepts?.reduce((max, c) => {
+    const time = new Date((c as any).createdAt || 0).getTime();
+    return time > max ? time : max;
+  }, 0) || 0;
+
+  const latestConcepts = concepts?.filter(c => {
+    const time = new Date((c as any).createdAt || 0).getTime();
+    return Math.abs(time - latestScanTime) < 10000;
+  }) || [];
+
   const generateQuizMutation = useMutation({
-    mutationFn: async (conceptId: string) => {
-      const res = await apiRequest("POST", "/api/quizzes/generate", { conceptId });
+    mutationFn: async ({ conceptId, numQuestions }: { conceptId: string, numQuestions: number }) => {
+      const res = await apiRequest("POST", "/api/quizzes/generate", { conceptId, numQuestions });
       return res.json();
     },
     onSuccess: () => {
@@ -157,8 +172,8 @@ export default function Quizzes() {
         </div>
 
         <div className="w-full bg-muted h-2 rounded-full overflow-hidden">
-          <div 
-            className="h-full bg-primary transition-all" 
+          <div
+            className="h-full bg-primary transition-all"
             style={{ width: `${progress}%` }}
           />
         </div>
@@ -169,8 +184,8 @@ export default function Quizzes() {
 
             <div className="space-y-3">
               {question.options.map((option: string, idx: number) => (
-                <label 
-                  key={idx} 
+                <label
+                  key={idx}
                   className="flex items-center gap-3 p-4 rounded-lg border cursor-pointer hover:bg-muted"
                   data-testid={`radio-option-${idx}`}
                 >
@@ -224,32 +239,52 @@ export default function Quizzes() {
     <div className="max-w-4xl mx-auto space-y-6">
       <div>
         <h1 className="text-4xl font-display font-bold mb-2">Quizzes</h1>
-        <p className="text-muted-foreground">Test your knowledge with AI-generated quizzes</p>
+        <p className="text-muted-foreground">Assess your understanding of the material</p>
       </div>
 
-      {concepts && Array.isArray(concepts) && concepts.length > 0 && (
+      {latestConcepts && latestConcepts.length > 0 && (
         <Card className="border-primary/50 bg-primary/5">
           <CardHeader>
-            <CardTitle className="text-lg">Generate New Quiz</CardTitle>
-            <CardDescription>Create an AI-powered quiz from your learned concepts</CardDescription>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" />
+              Create Practice Session
+            </CardTitle>
+            <CardDescription>Choose a topic to test yourself</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-6">
+            <div className="flex items-center gap-4 bg-background/50 p-4 rounded-lg border">
+              <span className="text-sm font-medium">Number of Questions:</span>
+              <div className="flex gap-2">
+                {[3, 5, 10].map((n) => (
+                  <Button
+                    key={n}
+                    variant={numQuestions === n ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setNumQuestions(n)}
+                  >
+                    {n}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
             <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-              {concepts.slice(0, 6).map((concept: Concept) => (
+              {latestConcepts.map((concept: Concept) => (
                 <Button
                   key={concept.id}
                   variant="outline"
                   size="sm"
-                  onClick={() => generateQuizMutation.mutate(concept.id)}
+                  onClick={() => generateQuizMutation.mutate({ conceptId: concept.id, numQuestions })}
                   disabled={generateQuizMutation.isPending}
                   data-testid={`button-generate-quiz-${concept.id}`}
+                  className="justify-start h-auto py-2 hover:bg-primary/10 transition-colors"
                 >
                   {generateQuizMutation.isPending ? (
                     <Loader2 className="h-4 w-4 animate-spin mr-2" />
                   ) : (
                     <Sparkles className="h-4 w-4 mr-2" />
                   )}
-                  {concept.term}
+                  <span className="truncate">{concept.term}</span>
                 </Button>
               ))}
             </div>
@@ -259,31 +294,34 @@ export default function Quizzes() {
 
       <div className="grid gap-4">
         {quizzes && quizzes.length > 0 ? (
-          quizzes.map((quiz) => (
-            <Card key={quiz.id} className="hover-elevate">
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div>
-                    <CardTitle>{quiz.title}</CardTitle>
-                    <CardDescription>
-                      {quiz.questions.length} questions
-                      {quiz.completed && ` • Score: ${quiz.score}%`}
-                    </CardDescription>
+          [...quizzes]
+            .filter(q => latestConcepts.some(c => c.id === q.conceptId))
+            .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
+            .map((quiz) => (
+              <Card key={quiz.id} className="hover-elevate">
+                <CardHeader>
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <CardTitle>{quiz.title}</CardTitle>
+                      <CardDescription>
+                        {quiz.questions.length} questions
+                        {quiz.completed && ` • Score: ${quiz.score}%`}
+                      </CardDescription>
+                    </div>
+                    <Button
+                      onClick={() => {
+                        setSelectedQuiz(quiz.id);
+                        setCurrentQuestion(0);
+                        setAnswers({});
+                      }}
+                      disabled={quiz.completed}
+                    >
+                      {quiz.completed ? "Completed" : "Take Quiz"}
+                    </Button>
                   </div>
-                  <Button
-                    onClick={() => {
-                      setSelectedQuiz(quiz.id);
-                      setCurrentQuestion(0);
-                      setAnswers({});
-                    }}
-                    disabled={quiz.completed}
-                  >
-                    {quiz.completed ? "Completed" : "Take Quiz"}
-                  </Button>
-                </div>
-              </CardHeader>
-            </Card>
-          ))
+                </CardHeader>
+              </Card>
+            ))
         ) : (
           <Card>
             <CardContent className="p-12 text-center">

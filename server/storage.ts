@@ -18,6 +18,7 @@ export interface IStorage {
   // Users
   getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
+  getAllUsers(): Promise<User[]>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: string, updates: Partial<User>): Promise<User | undefined>;
   
@@ -25,6 +26,7 @@ export interface IStorage {
   createScannedContent(data: any): Promise<ScannedContent>;
   getScannedContent(id: string): Promise<ScannedContent | undefined>;
   getUserScannedContent(userId: string): Promise<ScannedContent[]>;
+  getAllScannedContent(): Promise<ScannedContent[]>;
   
   // Concepts
   createConcept(data: any): Promise<Concept>;
@@ -44,6 +46,11 @@ export interface IStorage {
   getUserProgress(userId: string): Promise<LearningProgress[]>;
   getDueForReview(userId: string): Promise<LearningProgress[]>;
   upsertProgress(data: any): Promise<LearningProgress>;
+
+  // Deletes & Admin controls
+  deleteUser(id: string): Promise<boolean>;
+  deleteConcept(id: string): Promise<boolean>;
+  deleteScannedContent(id: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -56,6 +63,10 @@ export class DatabaseStorage implements IStorage {
   async getUserByUsername(username: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.username, username));
     return user || undefined;
+  }
+
+  async getAllUsers(): Promise<User[]> {
+    return await db.select().from(users);
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
@@ -86,6 +97,11 @@ export class DatabaseStorage implements IStorage {
   async getUserScannedContent(userId: string): Promise<ScannedContent[]> {
     return await db.select().from(scannedContent)
       .where(eq(scannedContent.userId, userId))
+      .orderBy(desc(scannedContent.createdAt));
+  }
+
+  async getAllScannedContent(): Promise<ScannedContent[]> {
+    return await db.select().from(scannedContent)
       .orderBy(desc(scannedContent.createdAt));
   }
 
@@ -174,6 +190,22 @@ export class DatabaseStorage implements IStorage {
     }
     const [progress] = await db.insert(learningProgress).values(data).returning();
     return progress;
+  }
+
+  // ===== DELETE & ADMIN METHODS =====
+  async deleteUser(id: string): Promise<boolean> {
+    const [deleted] = await db.delete(users).where(eq(users.id, id)).returning();
+    return !!deleted;
+  }
+
+  async deleteConcept(id: string): Promise<boolean> {
+    const [deleted] = await db.delete(concepts).where(eq(concepts.id, id)).returning();
+    return !!deleted;
+  }
+
+  async deleteScannedContent(id: string): Promise<boolean> {
+    const [deleted] = await db.delete(scannedContent).where(eq(scannedContent.id, id)).returning();
+    return !!deleted;
   }
 }
 

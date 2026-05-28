@@ -47,8 +47,8 @@ export default function Login() {
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-4 text-center">
           <div className="flex justify-center">
-            <div className="h-16 w-16 rounded-full bg-primary flex items-center justify-center">
-              <BookOpen className="h-8 w-8 text-primary-foreground" />
+            <div className="h-24 w-24 rounded-full bg-primary/10 flex items-center justify-center p-2 overflow-hidden border-4 border-primary/20">
+              <img src="/logo.png" alt="ARdent Study Logo" className="h-full w-full object-contain" />
             </div>
           </div>
           <CardTitle className="text-3xl font-display">Welcome Back</CardTitle>
