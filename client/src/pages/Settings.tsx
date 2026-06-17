@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { User, Bell, Palette, Shield, Save, Loader2, Upload, Download, FileUp, Globe } from "lucide-react";
-import femaleAvatar from "@assets/generated_images/female_student_avatar_portrait.png";
+import femaleAvatar from "@/assets/female_student_avatar_portrait.png";
 import { useToast } from "@/hooks/use-toast";
 import { useTheme } from "@/components/ThemeProvider";
 import { getLanguage, setLanguage, getAvailableLanguages, type Language } from "@/lib/i18n";
