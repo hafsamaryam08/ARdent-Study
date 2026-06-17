@@ -4,7 +4,7 @@ import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
 import { pool } from "./db";
 import { registerRoutes } from "./routes";
-import { setupVite, serveStatic, log } from "./vite";
+import { serveStatic, log } from "./static";
 import { storage } from "./storage";
 import { initNeo4j, createConceptNode, createRelationship } from "./neo4j";
 
@@ -105,6 +105,7 @@ app.use((req, res, next) => {
 
   // Keep this existing part below the code you just pasted:
   if (app.get("env") === "development") {
+    const { setupVite } = await import("./vite");
     await setupVite(app, server);
   } else {
     serveStatic(app);

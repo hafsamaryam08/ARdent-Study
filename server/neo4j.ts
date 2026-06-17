@@ -1,5 +1,5 @@
 import neo4j, { Driver } from "neo4j-driver";
-import { log } from "./vite";
+import { log } from "./static";
 
 const uri = process.env.NEO4J_URI || "neo4j://localhost:7687";
 const user = process.env.NEO4J_USERNAME || "87249568";
