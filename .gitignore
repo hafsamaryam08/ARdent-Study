@@ -14,9 +14,18 @@ __pycache__/
 *.pyc
 *.pyo
 .venv/
+backend/venv/
+
+# Assets
+attached_assets/
 
 # Database
 *.db
+
+# Temporary & Generated Files
+temp/
+client/public/scans/
+client/public/generated_models/
 
 # Logs & System Files
 .DS_Store
