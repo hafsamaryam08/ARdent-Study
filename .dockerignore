@@ -1,0 +1,12 @@
+.git
+.gitignore
+.replit
+.venv
+node_modules
+dist
+.env
+.history
+.vscode
+scratch
+temp
+*.log
