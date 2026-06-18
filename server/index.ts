@@ -9,6 +9,8 @@ import { storage } from "./storage";
 import { initNeo4j, createConceptNode, createRelationship } from "./neo4j";
 
 const app = express();
+app.set("trust proxy", 1);
+
 
 declare module 'http' {
   interface IncomingMessage {
